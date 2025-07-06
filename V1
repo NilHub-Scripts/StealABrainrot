@@ -1,0 +1,285 @@
+-- SERVICES
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+-- GUI SETUP
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "BrainrotCloneGUI"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+
+-- MAIN FRAME
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 280, 0, 280)
+frame.Position = UDim2.new(0.5, -140, 0.5, -140)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+-- DRAGGING
+local dragging, dragInput, dragStart, startPos
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then dragging = false end
+		end)
+	end
+end)
+frame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
+end)
+UIS.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+-- TITLE BAR
+local titleBar = Instance.new("Frame", frame)
+titleBar.Size = UDim2.new(1, 0, 0, 36)
+titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+titleBar.BorderSizePixel = 0
+Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 12)
+
+local title = Instance.new("TextLabel", titleBar)
+title.Size = UDim2.new(1, -80, 1, 0)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "Brainrot Clone Utility"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- MINIMIZE / CLOSE BUTTONS
+local minBtn = Instance.new("TextButton", titleBar)
+minBtn.Size = UDim2.new(0, 24, 0, 24)
+minBtn.Position = UDim2.new(1, -58, 0.5, -12)
+minBtn.BackgroundColor3 = Color3.fromRGB(255, 191, 0)
+minBtn.Text = "-"
+minBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+minBtn.TextScaled = true
+minBtn.Font = Enum.Font.GothamBold
+Instance.new("UICorner", minBtn).CornerRadius = UDim.new(1, 0)
+
+local closeBtn = Instance.new("TextButton", titleBar)
+closeBtn.Size = UDim2.new(0, 24, 0, 24)
+closeBtn.Position = UDim2.new(1, -30, 0.5, -12)
+closeBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.TextScaled = true
+closeBtn.Font = Enum.Font.GothamBold
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(1, 0)
+
+-- CONTENT FRAME
+local content = Instance.new("Frame", frame)
+content.Name = "Content"
+content.Position = UDim2.new(0, 0, 0, 36)
+content.Size = UDim2.new(1, 0, 1, -36)
+content.BackgroundTransparency = 1
+
+-- BUTTON MAKER
+local function makeButton(text, position, color)
+	local btn = Instance.new("TextButton", content)
+	btn.Size = UDim2.new(0.8, 0, 0, 36)
+	btn.Position = position
+	btn.BackgroundColor3 = color
+	btn.Text = text
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.TextScaled = true
+	btn.Font = Enum.Font.GothamSemibold
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+	return btn
+end
+
+-- BUTTONS
+local cloneBtn = makeButton("Clone", UDim2.new(0.1, 0, 0, 6), Color3.fromRGB(0, 170, 255))
+local bringBtn = makeButton("Bring Clones", UDim2.new(0.1, 0, 0, 48), Color3.fromRGB(140, 85, 255))
+local removeBtn = makeButton("Remove Clones", UDim2.new(0.1, 0, 0, 90), Color3.fromRGB(255, 70, 70))
+local toggleBtn = makeButton("Jump Platform: OFF", UDim2.new(0.1, 0, 0, 132), Color3.fromRGB(70, 255, 100))
+local anchorBtn = makeButton("Anchored: ON", UDim2.new(0.1, 0, 0, 174), Color3.fromRGB(255, 170, 0))
+local ladderBtn = makeButton("Stairs: OFF", UDim2.new(0.1, 0, 0, 216), Color3.fromRGB(100, 200, 255))
+
+-- STATE
+local cloneFolder = Instance.new("Folder", workspace)
+cloneFolder.Name = "Lexis_Clones"
+local toggleOn = false
+local anchored = true
+local ladderOn = false
+local jumpConnection = nil
+local ladderModel = nil
+
+-- CLONE
+cloneBtn.MouseButton1Click:Connect(function()
+	local source = workspace:FindFirstChild("8608832887_Clone") or workspace:WaitForChild("8608832887_Clone", 5)
+	if not source then warn("Clone not found") return end
+
+	local clone = source:Clone()
+	clone.Name = "BrainrotClone"
+	clone.Parent = cloneFolder
+
+	for _, part in ipairs(clone:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Anchored = anchored
+			part.CanCollide = false
+		end
+	end
+
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		clone:PivotTo(hrp.CFrame * CFrame.new(math.random(-5, 5), 0, math.random(-5, 5)))
+	end
+end)
+
+-- BRING CLONES TO PLAYER
+bringBtn.MouseButton1Click:Connect(function()
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+
+	for _, clone in ipairs(cloneFolder:GetChildren()) do
+		if clone:IsA("Model") and clone:FindFirstChild("HumanoidRootPart") then
+			clone:PivotTo(hrp.CFrame * CFrame.new(0, 3, 0))
+		end
+	end
+end)
+
+-- REMOVE CLONES
+removeBtn.MouseButton1Click:Connect(function()
+	for _, c in ipairs(cloneFolder:GetChildren()) do
+		c:Destroy()
+	end
+end)
+
+-- ANCHOR TOGGLE
+anchorBtn.MouseButton1Click:Connect(function()
+	anchored = not anchored
+	anchorBtn.Text = "Anchored: " .. (anchored and "ON" or "OFF")
+
+	for _, clone in ipairs(cloneFolder:GetChildren()) do
+		for _, part in ipairs(clone:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = anchored
+			end
+		end
+	end
+end)
+
+-- JUMP PLATFORM
+toggleBtn.MouseButton1Click:Connect(function()
+	toggleOn = not toggleOn
+	toggleBtn.Text = "Jump Platform: " .. (toggleOn and "ON" or "OFF")
+
+	if toggleOn then
+		jumpConnection = player.Character:WaitForChild("Humanoid").StateChanged:Connect(function(_, new)
+			if new == Enum.HumanoidStateType.Jumping then
+				local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				local clone = workspace:FindFirstChild("8608832887_Clone")
+				if clone and hrp then
+					local cloneHRP = clone:FindFirstChild("HumanoidRootPart")
+					if cloneHRP then
+						for _, p in ipairs(clone:GetDescendants()) do
+							if p:IsA("BasePart") then
+								p.Anchored = true
+								p.CanCollide = false
+							end
+						end
+						cloneHRP.Anchored = true
+						cloneHRP.CanCollide = true
+						local offsetY = hrp.Size.Y / 2 + cloneHRP.Size.Y / 2
+						clone:PivotTo(CFrame.new(hrp.Position - Vector3.new(0, offsetY + 0.05, 0)))
+					end
+				end
+			end
+		end)
+	else
+		if jumpConnection then
+			jumpConnection:Disconnect()
+			jumpConnection = nil
+		end
+	end
+end)
+
+-- LADDER STAIRS
+ladderBtn.MouseButton1Click:Connect(function()
+	ladderOn = not ladderOn
+	ladderBtn.Text = "Stairs: " .. (ladderOn and "ON" or "OFF")
+
+	if ladderOn then
+		local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
+
+		ladderModel = Instance.new("Model", workspace)
+		ladderModel.Name = "StaircaseModel"
+
+		local basePos = hrp.CFrame.Position + hrp.CFrame.LookVector * 6
+		local stepHeight = 1
+		local stepDepth = 2
+		local stepCount = 10
+
+		for i = 0, stepCount - 1 do
+			local step = Instance.new("Part")
+			step.Size = Vector3.new(6, stepHeight, stepDepth)
+			step.Anchored = true
+			step.CanCollide = true
+			step.Material = Enum.Material.SmoothPlastic
+			step.BrickColor = BrickColor.new("Really black")
+			step.Position = basePos + hrp.CFrame.LookVector * (i * stepDepth) + Vector3.new(0, i * stepHeight, 0)
+			step.Orientation = hrp.Orientation
+			step.Parent = ladderModel
+		end
+	else
+		if ladderModel then
+			ladderModel:Destroy()
+			ladderModel = nil
+		end
+	end
+end)
+
+-- RESET BUTTON (outside GUI)
+local resetGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+resetGui.Name = "ResetButtonGUI"
+resetGui.ResetOnSpawn = false
+resetGui.IgnoreGuiInset = true
+
+local resetBtn = Instance.new("TextButton", resetGui)
+resetBtn.Size = UDim2.new(0, 100, 0, 30)
+resetBtn.Position = UDim2.new(0, 10, 1, -40) -- bottom left
+resetBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+resetBtn.Text = "RESET"
+resetBtn.TextColor3 = Color3.new(1, 1, 1)
+resetBtn.TextScaled = true
+resetBtn.Font = Enum.Font.GothamBold
+Instance.new("UICorner", resetBtn).CornerRadius = UDim.new(0, 8)
+
+resetBtn.MouseButton1Click:Connect(function()
+	local char = player.Character
+	if char then
+		local hum = char:FindFirstChild("Humanoid")
+		if hum then
+			hum.Health = 0
+		end
+	end
+end)
+
+-- MINIMIZE / CLOSE
+local minimized = false
+minBtn.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	local size = minimized and UDim2.new(0, 280, 0, 36) or UDim2.new(0, 280, 0, 280)
+	TweenService:Create(frame, TweenInfo.new(0.3), {Size = size}):Play()
+	content.Visible = not minimized
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+	TweenService:Create(frame, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+	task.delay(0.4, function()
+		gui:Destroy()
+	end)
+end)
