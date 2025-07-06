@@ -2,6 +2,7 @@
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
 -- GUI SETUP
@@ -12,8 +13,8 @@ gui.IgnoreGuiInset = true
 
 -- MAIN FRAME
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 280, 0, 320)
-frame.Position = UDim2.new(0.5, -140, 0.5, -160)
+frame.Size = UDim2.new(0, 280, 0, 240)
+frame.Position = UDim2.new(0.5, -140, 0.5, -120)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
@@ -51,7 +52,7 @@ local title = Instance.new("TextLabel", titleBar)
 title.Size = UDim2.new(1, -80, 1, 0)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "Brainrot Clone Utility"
+title.Text = "Stair & Path Utility"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBold
@@ -85,11 +86,11 @@ content.Position = UDim2.new(0, 0, 0, 36)
 content.Size = UDim2.new(1, 0, 1, -36)
 content.BackgroundTransparency = 1
 
--- BUTTON CREATOR
-local function makeButton(text, pos, color)
+-- BUTTON MAKER
+local function makeButton(text, position, color)
 	local btn = Instance.new("TextButton", content)
 	btn.Size = UDim2.new(0.8, 0, 0, 36)
-	btn.Position = pos
+	btn.Position = position
 	btn.BackgroundColor3 = color
 	btn.Text = text
 	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -100,119 +101,22 @@ local function makeButton(text, pos, color)
 end
 
 -- BUTTONS
-local cloneBtn = makeButton("Clone", UDim2.new(0.1, 0, 0, 6), Color3.fromRGB(0, 170, 255))
-local bringBtn = makeButton("Bring Clones", UDim2.new(0.1, 0, 0, 48), Color3.fromRGB(140, 85, 255))
-local removeBtn = makeButton("Remove Clones", UDim2.new(0.1, 0, 0, 90), Color3.fromRGB(255, 70, 70))
-local toggleBtn = makeButton("Jump Platform: OFF", UDim2.new(0.1, 0, 0, 132), Color3.fromRGB(70, 255, 100))
-local anchorBtn = makeButton("Anchored: ON", UDim2.new(0.1, 0, 0, 174), Color3.fromRGB(255, 170, 0))
-local stairsBtn = makeButton("Spawn Stairs", UDim2.new(0.1, 0, 0, 216), Color3.fromRGB(100, 200, 255))
+local stairBtn = makeButton("Spawn Stairs", UDim2.new(0.1, 0, 0, 6), Color3.fromRGB(100, 200, 255))
+local pathBtn = makeButton("Spawn Path", UDim2.new(0.1, 0, 0, 48), Color3.fromRGB(80, 180, 255))
+local pathTestBtn = makeButton("Spawn Path (Test)", UDim2.new(0.1, 0, 0, 90), Color3.fromRGB(255, 140, 80))
 
--- STATE
-local toggleOn = false
-local anchored = true
-local cloneFolder = Instance.new("Folder", workspace)
-cloneFolder.Name = "Lexis_Clones"
-local jumpConnection = nil
-
--- CLONE BUTTON
-cloneBtn.MouseButton1Click:Connect(function()
-	local source = workspace:FindFirstChild("8608832887_Clone") or workspace:WaitForChild("8608832887_Clone", 5)
-	if not source then warn("Clone not found") return end
-
-	local clone = source:Clone()
-	clone.Name = "BrainrotClone"
-	clone.Parent = cloneFolder
-
-	for _, part in ipairs(clone:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.Anchored = anchored
-			part.CanCollide = false
-		end
-	end
-
-	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if hrp then
-		clone:PivotTo(hrp.CFrame * CFrame.new(math.random(-5, 5), 0, math.random(-5, 5)))
-	end
-end)
-
--- BRING CLONES
-bringBtn.MouseButton1Click:Connect(function()
+-- STAIRS
+stairBtn.MouseButton1Click:Connect(function()
 	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
 
-	for _, clone in ipairs(cloneFolder:GetChildren()) do
-		if clone:IsA("Model") and clone:FindFirstChild("HumanoidRootPart") then
-			clone:PivotTo(hrp.CFrame * CFrame.new(0, 3, 0))
-		end
-	end
-end)
-
--- REMOVE CLONES
-removeBtn.MouseButton1Click:Connect(function()
-	for _, c in ipairs(cloneFolder:GetChildren()) do
-		c:Destroy()
-	end
-end)
-
--- TOGGLE ANCHOR
-anchorBtn.MouseButton1Click:Connect(function()
-	anchored = not anchored
-	anchorBtn.Text = "Anchored: " .. (anchored and "ON" or "OFF")
-
-	for _, clone in ipairs(cloneFolder:GetChildren()) do
-		for _, part in ipairs(clone:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.Anchored = anchored
-			end
-		end
-	end
-end)
-
--- TOGGLE JUMP PLATFORM
-toggleBtn.MouseButton1Click:Connect(function()
-	toggleOn = not toggleOn
-	toggleBtn.Text = "Jump Platform: " .. (toggleOn and "ON" or "OFF")
-
-	if toggleOn then
-		jumpConnection = player.Character:WaitForChild("Humanoid").StateChanged:Connect(function(_, new)
-			if new == Enum.HumanoidStateType.Jumping then
-				local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-				local clone = workspace:FindFirstChild("8608832887_Clone")
-				if clone and hrp then
-					local cloneHRP = clone:FindFirstChild("HumanoidRootPart")
-					if cloneHRP then
-						for _, p in ipairs(clone:GetDescendants()) do
-							if p:IsA("BasePart") then
-								p.Anchored = true
-								p.CanCollide = false
-							end
-						end
-						cloneHRP.Anchored = true
-						cloneHRP.CanCollide = true
-						local offsetY = hrp.Size.Y / 2 + cloneHRP.Size.Y / 2
-						clone:PivotTo(CFrame.new(hrp.Position - Vector3.new(0, offsetY + 0.05, 0)))
-					end
-				end
-			end
-		end)
-	else
-		if jumpConnection then
-			jumpConnection:Disconnect()
-			jumpConnection = nil
-		end
-	end
-end)
-
--- SPAWN STAIRS
-stairsBtn.MouseButton1Click:Connect(function()
-	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
-
-	local basePos = hrp.CFrame.Position + hrp.CFrame.LookVector * 6
+	local basePos = hrp.Position + hrp.CFrame.LookVector * 6
 	local stepHeight = 1
 	local stepDepth = 2
-	local stepCount = 30
+	local stepCount = 20
+
+	local model = Instance.new("Model", workspace)
+	model.Name = "Stairs"
 
 	for i = 0, stepCount - 1 do
 		local step = Instance.new("Part")
@@ -223,15 +127,70 @@ stairsBtn.MouseButton1Click:Connect(function()
 		step.BrickColor = BrickColor.new("Really black")
 		step.Position = basePos + hrp.CFrame.LookVector * (i * stepDepth) + Vector3.new(0, i * stepHeight, 0)
 		step.Orientation = hrp.Orientation
-		step.Parent = workspace
+		step.Parent = model
 	end
+end)
+
+-- PATH
+pathBtn.MouseButton1Click:Connect(function()
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+
+	local path = Instance.new("Part")
+	path.Size = Vector3.new(8, 1, 80)
+	path.Anchored = true
+	path.CanCollide = true
+	path.Material = Enum.Material.SmoothPlastic
+	path.BrickColor = BrickColor.new("Really black")
+	path.Position = hrp.Position + hrp.CFrame.LookVector * (path.Size.Z / 2 + 6) - Vector3.new(0, 3, 0)
+	path.Orientation = hrp.Orientation
+	path.Parent = workspace
+end)
+
+-- MOVING PATH
+pathTestBtn.MouseButton1Click:Connect(function()
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+
+	local path = Instance.new("Part")
+	path.Size = Vector3.new(8, 1, 80)
+	path.Anchored = true
+	path.CanCollide = true
+	path.Material = Enum.Material.Neon
+	path.BrickColor = BrickColor.new("Bright blue")
+	path.Position = hrp.Position + hrp.CFrame.LookVector * (path.Size.Z / 2 + 6) - Vector3.new(0, 3, 0)
+	path.Orientation = hrp.Orientation
+	path.Parent = workspace
+
+	-- Region detection
+	local region = Region3.new(
+		path.Position - (path.Size / 2),
+		path.Position + (path.Size / 2)
+	)
+
+	local connection
+	connection = RunService.Heartbeat:Connect(function()
+		local parts = workspace:FindPartsInRegion3(region, nil, math.huge)
+		for _, p in pairs(parts) do
+			local char = p:FindFirstAncestorWhichIsA("Model")
+			if char and char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart") then
+				char:TranslateBy(path.CFrame.LookVector * 2.5)
+			end
+		end
+	end)
+
+	-- Auto-disconnect after 30 sec
+	task.delay(30, function()
+		if connection then connection:Disconnect() end
+		if path then path:Destroy() end
+	end)
 end)
 
 -- MINIMIZE / CLOSE
 local minimized = false
 minBtn.MouseButton1Click:Connect(function()
 	minimized = not minimized
-	local size = minimized and UDim2.new(0, 280, 0, 36) or UDim2.new(0, 280, 0, 320)
+	local size = minimized and UDim2.new(0, 280, 0, 36) or UDim2.new(0, 280, 0, 240)
 	TweenService:Create(frame, TweenInfo.new(0.3), {Size = size}):Play()
 	content.Visible = not minimized
 end)
