@@ -242,32 +242,6 @@ ladderBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- RESET BUTTON (outside GUI)
-local resetGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-resetGui.Name = "ResetButtonGUI"
-resetGui.ResetOnSpawn = false
-resetGui.IgnoreGuiInset = true
-
-local resetBtn = Instance.new("TextButton", resetGui)
-resetBtn.Size = UDim2.new(0, 100, 0, 30)
-resetBtn.Position = UDim2.new(0, 10, 1, -40) -- bottom left
-resetBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-resetBtn.Text = "RESET"
-resetBtn.TextColor3 = Color3.new(1, 1, 1)
-resetBtn.TextScaled = true
-resetBtn.Font = Enum.Font.GothamBold
-Instance.new("UICorner", resetBtn).CornerRadius = UDim.new(0, 8)
-
-resetBtn.MouseButton1Click:Connect(function()
-	local char = player.Character
-	if char then
-		local hum = char:FindFirstChild("Humanoid")
-		if hum then
-			hum.Health = 0
-		end
-	end
-end)
-
 -- MINIMIZE / CLOSE
 local minimized = false
 minBtn.MouseButton1Click:Connect(function()
