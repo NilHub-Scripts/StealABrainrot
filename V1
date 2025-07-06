@@ -12,8 +12,8 @@ gui.IgnoreGuiInset = true
 
 -- MAIN FRAME
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 280, 0, 280)
-frame.Position = UDim2.new(0.5, -140, 0.5, -140)
+frame.Size = UDim2.new(0, 280, 0, 320)
+frame.Position = UDim2.new(0.5, -140, 0.5, -160)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
@@ -85,11 +85,11 @@ content.Position = UDim2.new(0, 0, 0, 36)
 content.Size = UDim2.new(1, 0, 1, -36)
 content.BackgroundTransparency = 1
 
--- BUTTON MAKER
-local function makeButton(text, position, color)
+-- BUTTON CREATOR
+local function makeButton(text, pos, color)
 	local btn = Instance.new("TextButton", content)
 	btn.Size = UDim2.new(0.8, 0, 0, 36)
-	btn.Position = position
+	btn.Position = pos
 	btn.BackgroundColor3 = color
 	btn.Text = text
 	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -105,18 +105,16 @@ local bringBtn = makeButton("Bring Clones", UDim2.new(0.1, 0, 0, 48), Color3.fro
 local removeBtn = makeButton("Remove Clones", UDim2.new(0.1, 0, 0, 90), Color3.fromRGB(255, 70, 70))
 local toggleBtn = makeButton("Jump Platform: OFF", UDim2.new(0.1, 0, 0, 132), Color3.fromRGB(70, 255, 100))
 local anchorBtn = makeButton("Anchored: ON", UDim2.new(0.1, 0, 0, 174), Color3.fromRGB(255, 170, 0))
-local ladderBtn = makeButton("Stairs: OFF", UDim2.new(0.1, 0, 0, 216), Color3.fromRGB(100, 200, 255))
+local stairsBtn = makeButton("Spawn Stairs", UDim2.new(0.1, 0, 0, 216), Color3.fromRGB(100, 200, 255))
 
 -- STATE
-local cloneFolder = Instance.new("Folder", workspace)
-cloneFolder.Name = "Lexis_Clones"
 local toggleOn = false
 local anchored = true
-local ladderOn = false
+local cloneFolder = Instance.new("Folder", workspace)
+cloneFolder.Name = "Lexis_Clones"
 local jumpConnection = nil
-local ladderModel = nil
 
--- CLONE
+-- CLONE BUTTON
 cloneBtn.MouseButton1Click:Connect(function()
 	local source = workspace:FindFirstChild("8608832887_Clone") or workspace:WaitForChild("8608832887_Clone", 5)
 	if not source then warn("Clone not found") return end
@@ -138,7 +136,7 @@ cloneBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- BRING CLONES TO PLAYER
+-- BRING CLONES
 bringBtn.MouseButton1Click:Connect(function()
 	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
@@ -157,7 +155,7 @@ removeBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- ANCHOR TOGGLE
+-- TOGGLE ANCHOR
 anchorBtn.MouseButton1Click:Connect(function()
 	anchored = not anchored
 	anchorBtn.Text = "Anchored: " .. (anchored and "ON" or "OFF")
@@ -171,7 +169,7 @@ anchorBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- JUMP PLATFORM
+-- TOGGLE JUMP PLATFORM
 toggleBtn.MouseButton1Click:Connect(function()
 	toggleOn = not toggleOn
 	toggleBtn.Text = "Jump Platform: " .. (toggleOn and "ON" or "OFF")
@@ -206,39 +204,26 @@ toggleBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- LADDER STAIRS
-ladderBtn.MouseButton1Click:Connect(function()
-	ladderOn = not ladderOn
-	ladderBtn.Text = "Stairs: " .. (ladderOn and "ON" or "OFF")
+-- SPAWN STAIRS
+stairsBtn.MouseButton1Click:Connect(function()
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
 
-	if ladderOn then
-		local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if not hrp then return end
+	local basePos = hrp.CFrame.Position + hrp.CFrame.LookVector * 6
+	local stepHeight = 1
+	local stepDepth = 2
+	local stepCount = 30
 
-		ladderModel = Instance.new("Model", workspace)
-		ladderModel.Name = "StaircaseModel"
-
-		local basePos = hrp.CFrame.Position + hrp.CFrame.LookVector * 6
-		local stepHeight = 1
-		local stepDepth = 2
-		local stepCount = 10
-
-		for i = 0, stepCount - 1 do
-			local step = Instance.new("Part")
-			step.Size = Vector3.new(6, stepHeight, stepDepth)
-			step.Anchored = true
-			step.CanCollide = true
-			step.Material = Enum.Material.SmoothPlastic
-			step.BrickColor = BrickColor.new("Really black")
-			step.Position = basePos + hrp.CFrame.LookVector * (i * stepDepth) + Vector3.new(0, i * stepHeight, 0)
-			step.Orientation = hrp.Orientation
-			step.Parent = ladderModel
-		end
-	else
-		if ladderModel then
-			ladderModel:Destroy()
-			ladderModel = nil
-		end
+	for i = 0, stepCount - 1 do
+		local step = Instance.new("Part")
+		step.Size = Vector3.new(6, stepHeight, stepDepth)
+		step.Anchored = true
+		step.CanCollide = true
+		step.Material = Enum.Material.SmoothPlastic
+		step.BrickColor = BrickColor.new("Really black")
+		step.Position = basePos + hrp.CFrame.LookVector * (i * stepDepth) + Vector3.new(0, i * stepHeight, 0)
+		step.Orientation = hrp.Orientation
+		step.Parent = workspace
 	end
 end)
 
@@ -246,7 +231,7 @@ end)
 local minimized = false
 minBtn.MouseButton1Click:Connect(function()
 	minimized = not minimized
-	local size = minimized and UDim2.new(0, 280, 0, 36) or UDim2.new(0, 280, 0, 280)
+	local size = minimized and UDim2.new(0, 280, 0, 36) or UDim2.new(0, 280, 0, 320)
 	TweenService:Create(frame, TweenInfo.new(0.3), {Size = size}):Play()
 	content.Visible = not minimized
 end)
